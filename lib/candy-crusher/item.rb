@@ -42,9 +42,9 @@ class CandyCrusher::Item
     image_locked_green     => new("g", :candy, :locked),
 
     image_vstripe_red       => new("r", :candy, :vstripe),
-    # image_vstripe_blue      => new("b", :candy, :vstripe),
+    image_vstripe_blue      => new("b", :candy, :vstripe),
     image_vstripe_orange    => new("o", :candy, :vstripe),
-    # image_vstripe_purple    => new("p", :candy, :vstripe),
+    image_vstripe_purple    => new("p", :candy, :vstripe),
     image_vstripe_yellow    => new("y", :candy, :vstripe),
     image_vstripe_green     => new("g", :candy, :vstripe),
 
@@ -56,8 +56,8 @@ class CandyCrusher::Item
     image_hstripe_green     => new("g", :candy, :hstripe),
 
     # image_wrapped_red       => new("r", :candy, :wrapped),
-    # image_wrapped_blue      => new("b", :candy, :wrapped),
-    # image_wrapped_orange    => new("o", :candy, :wrapped),
+    image_wrapped_blue      => new("b", :candy, :wrapped),
+    image_wrapped_orange    => new("o", :candy, :wrapped),
     # image_wrapped_purple    => new("p", :candy, :wrapped),
     image_wrapped_yellow    => new("y", :candy, :wrapped),
     image_wrapped_green     => new("g", :candy, :wrapped),

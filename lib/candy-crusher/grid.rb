@@ -52,7 +52,7 @@ class CandyCrusher::Grid
           end
         end
 
-        if best_score > 200
+        if best_score > 150
           best_item = nil
         end
 
