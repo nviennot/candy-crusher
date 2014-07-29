@@ -48,10 +48,10 @@ class CandyCrusher::Item
     image_vstripe_yellow    => new("y", :candy, :vstripe),
     image_vstripe_green     => new("g", :candy, :vstripe),
 
-    # image_hstripe_red       => new("r", :candy, :hstripe),
+    image_hstripe_red       => new("r", :candy, :hstripe),
     image_hstripe_blue      => new("b", :candy, :hstripe),
     # image_hstripe_orange    => new("o", :candy, :hstripe),
-    # image_hstripe_purple    => new("p", :candy, :hstripe),
+    image_hstripe_purple    => new("p", :candy, :hstripe),
     # image_hstripe_yellow    => new("y", :candy, :hstripe),
     image_hstripe_green     => new("g", :candy, :hstripe),
 
@@ -59,12 +59,14 @@ class CandyCrusher::Item
     # image_wrapped_blue      => new("b", :candy, :wrapped),
     # image_wrapped_orange    => new("o", :candy, :wrapped),
     # image_wrapped_purple    => new("p", :candy, :wrapped),
-    # image_wrapped_yellow    => new("y", :candy, :wrapped),
-    # image_wrapped_green     => new("g", :candy, :wrapped),
+    image_wrapped_yellow    => new("y", :candy, :wrapped),
+    image_wrapped_green     => new("g", :candy, :wrapped),
+
 
     image_sprinkle       => new("S", :candy),
 
     image_chocolate => new("C"),
+    image_empty_double_jelly => new("J"),
   }
 
   def dup
@@ -80,11 +82,15 @@ class CandyCrusher::Item
   end
 
   def special?
-    stripped?
+    stripped? || wrapped?
   end
 
   def movable?
     candy? && !locked?
+  end
+
+  def wrapped?
+    modifiers.include? :wrapped
   end
 
   def hstripped?

@@ -161,17 +161,35 @@ class CandyCrusher::Grid
     1.0 - num_holes.to_f / num_items.to_f
   end
 
+  def safe_remove(i,j)
+    self[i,j] = Item.hole unless self[i,j] == Item.nothing
+  end
+
   def destroy!(i,j)
     if self[i,j].hstripped?
       for i_ in 0...max_i do
-        self[i_,j] = Item.hole unless self[i_,j] == Item.nothing
+        safe_remove(i_,j)
       end
     end
 
     if self[i,j].vstripped?
       for j_ in 0...max_j do
-        self[i,j_] = Item.hole unless self[i,j_] == Item.nothing
+        safe_remove(i,j_)
       end
+    end
+
+    if self[i,j].wrapped?
+      safe_remove(i-1,j-1)
+      safe_remove(i-1,j)
+      safe_remove(i-1,j+1)
+
+      safe_remove(i,j-1)
+      safe_remove(i,j)
+      safe_remove(i,j+1)
+
+      safe_remove(i+1,j-1)
+      safe_remove(i+1,j)
+      safe_remove(i+1,j+1)
     end
 
     self[i,j] = Item.hole

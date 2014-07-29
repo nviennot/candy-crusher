@@ -4,9 +4,9 @@ class CandyCrusher::Logic
   SCORES = {
     :normal   => 1,
     :stripe   => 10, # Random stripe, not great.
-    :vstripe  => 100,
+    :vstripe  => 30,
     :hstripe  => 100,
-    :sprinkle => 10000,
+    :sprinkle => 500,
   }
 
   def initialize
@@ -17,8 +17,8 @@ class CandyCrusher::Logic
     all_moves = moves.dup
 
     options[:max_depth].times.each do |depth|
-      puts "Iteration #{depth+1}"
-      next if depth == 1
+      next if depth == 0
+      puts "Iteration #{depth}"
 
       new_moves = []
 
@@ -30,15 +30,15 @@ class CandyCrusher::Logic
       end
 
       break if new_moves.empty?
-      moves = new_moves.sort_by { |m| m[:score] }
+      moves = new_moves.sort_by { |m| -m[:score] }
       all_moves += moves
       break if Time.now > options[:end_time]
     end
 
-    all_moves.sort_by { |m| m[:score] }
+    all_moves = all_moves.sort_by { |m| -m[:total_score] }
 
     chain = []
-    move = all_moves.last
+    move = all_moves.first
     until move.nil?
       chain << move
       move = move[:parent]
@@ -58,13 +58,17 @@ class CandyCrusher::Logic
           new_grid, combos, score = apply_game_rules(grid.remove_taint.swap(i,j,*swap))
           next if combos.empty?
 
-          moves << {:swap       => [i,j,*swap],
-                    :combos     => combos,
-                    :score      => score,
-                    :old_grid   => grid,
-                    :new_grid   => new_grid,
-                    :parent     => parent_move,
-                    :next_moves => nil}
+          total_score = score
+          total_score += parent_move[:score] if parent_move
+
+          moves << {:swap        => [i,j,*swap],
+                    :combos      => combos,
+                    :score       => score,
+                    :total_score => total_score,
+                    :old_grid    => grid,
+                    :new_grid    => new_grid,
+                    :parent      => parent_move,
+                    :next_moves  => nil}
         end
       end
     end
