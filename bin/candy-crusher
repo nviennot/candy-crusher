@@ -1,0 +1,90 @@
+#!/usr/bin/env ruby
+$:.unshift "#{File.expand_path File.dirname(__FILE__)}/../lib"
+require "candy-crusher"
+
+require 'optparse'
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: candy-crusher [options]"
+
+  opts.on("-S", "--screen x,y,w,h", Array) do |x,y,w,h|
+    options[:screen] = [x,y,w,h].map(&:to_i)
+  end
+
+  opts.on("-F", "--file path", String) do |path|
+    options[:file] = path
+  end
+
+  opts.on("-G", "--grid-offset x,y", Array) do |x,y|
+    options[:grid] = [x,y].map(&:to_i)
+  end
+
+  opts.on("-L", "--layout i,j,i_max,j_max", Array) do |i,j,i_max,j_max|
+    options[:layouts] ||= []
+    options[:layouts] << [i,j,i_max,j_max].map(&:to_i)
+  end
+
+  opts.on("-C", "--connector i,j,other_i,other_j", Array) do |i,j,other_i,other_j|
+    options[:connectors] ||= []
+    options[:connectors] << [i,j,other_i,other_j].map(&:to_i)
+  end
+
+  opts.on("-i", "--iterations i", Integer) do |i|
+    options[:max_iterations] = i
+  end
+
+  opts.on("-v", "--verbose") do
+    options[:verbose] = true
+  end
+end.parse!
+
+print "Capture Screen..."
+if options[:file]
+  screen = ChunkyPNG::Image.from_file(options[:file])
+else
+  screen = CandyCrusher::ScreenCapture.new(*options[:screen]).capture
+  screen.save('/tmp/capture.png')
+end
+puts " Done"
+
+print "Analyze Grid..."
+grid = CandyCrusher::Grid.get_grid(screen, options)
+puts " Done"
+
+print "Computing Moves..."
+chain_moves = CandyCrusher::Logic.new.compute_moves(grid, options[:max_iterations] || 3)
+puts " Done"
+moves = chain_moves.last
+
+if moves.nil?
+  puts grid
+  puts "can't find a move :("
+  exit 1
+end
+
+def print_move(opt={})
+  options = {}
+  options[:highlight] = [[opt[:swap][0], opt[:swap][1]],
+                         [opt[:swap][2], opt[:swap][3]]] if opt[:swap]
+
+  if opt[:combos]
+    combos = opt[:combos].sort_by { |c| c == :normal ? 0 : 1 }.group_by { |c| c }
+      .map { |c,v| "#{v.count}x #{c == :normal ? c : "\e[1;31m#{c}\e[0m"}" }
+      .join(", ")
+  end
+
+  options[:text] = []
+  options[:text] << "Score:  #{opt[:score].to_f.round(2)}" if opt[:score]
+  options[:text] << "Combos: #{combos}" if combos
+
+  puts opt[:grid].to_s(options)
+end
+
+moves.each_with_index do |move, index|
+  if options[:verbose] || index == 0
+    print_move(move.merge(:grid => move[:old_grid]))
+  end
+end
+
+print_move(:grid => moves.last[:new_grid])
