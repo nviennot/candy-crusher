@@ -12,11 +12,41 @@ class CandyCrusher::Logic
   def initialize
   end
 
-  def compute_moves(grid, max_iteration=3)
-    if max_iteration.zero?
-      return []
+  def compute_best_move(grid, options={})
+    moves = compute_moves(grid, nil)
+    all_moves = moves.dup
+
+    options[:max_depth].times.each do |depth|
+      puts "Iteration #{depth+1}"
+      next if depth == 1
+
+      new_moves = []
+
+      moves.each do |move|
+        move[:next_moves] = compute_moves(move[:new_grid], move)
+        new_moves += move[:next_moves]
+
+        break if Time.now > options[:end_time]
+      end
+
+      break if new_moves.empty?
+      moves = new_moves.sort_by { |m| m[:score] }
+      all_moves += moves
+      break if Time.now > options[:end_time]
     end
 
+    all_moves.sort_by { |m| m[:score] }
+
+    chain = []
+    move = all_moves.last
+    until move.nil?
+      chain << move
+      move = move[:parent]
+    end
+    chain.reverse
+  end
+
+  def compute_moves(grid, parent_move)
     moves = []
 
     for i in 0...(grid.max_i-1) do
@@ -27,22 +57,19 @@ class CandyCrusher::Logic
           next unless grid[*swap].movable?
           new_grid, combos, score = apply_game_rules(grid.remove_taint.swap(i,j,*swap))
           next if combos.empty?
-          next if grid.empty_ratio < 0.8
 
-          next_moves = compute_moves(new_grid, max_iteration-1)
-
-          move = [{:swap     => [i,j,*swap],
-                   :combos   => combos,
-                   :score    => score,
-                   :old_grid => grid,
-                   :new_grid => new_grid}]
-          moves << move
-          next_moves.each { |next_move| moves << move + next_move }
+          moves << {:swap       => [i,j,*swap],
+                    :combos     => combos,
+                    :score      => score,
+                    :old_grid   => grid,
+                    :new_grid   => new_grid,
+                    :parent     => parent_move,
+                    :next_moves => nil}
         end
       end
     end
 
-    moves.sort_by { |move| move.map { |m| m[:score] }.reduce(:+) }
+    moves
   end
 
   def apply_game_rules(grid)

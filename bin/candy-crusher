@@ -30,8 +30,12 @@ OptionParser.new do |opts|
     options[:connectors] << [i,j,other_i,other_j].map(&:to_i)
   end
 
-  opts.on("-i", "--iterations i", Integer) do |i|
-    options[:max_iterations] = i
+  opts.on("-d", "--max-depth i", Integer) do |i|
+    options[:max_depth] = i
+  end
+
+  opts.on("-t", "--max-time t", Integer) do |t|
+    options[:max_time] = t
   end
 
   opts.on("-v", "--verbose") do
@@ -52,10 +56,13 @@ print "Analyze Grid..."
 grid = CandyCrusher::Grid.get_grid(screen, options)
 puts " Done"
 
-print "Computing Moves..."
-chain_moves = CandyCrusher::Logic.new.compute_moves(grid, options[:max_iterations] || 3)
+puts "Computing Moves..."
+
+options[:max_depth] ||= 15
+options[:max_time]  ||= 10
+moves = CandyCrusher::Logic.new.compute_best_move(grid, :max_depth => options[:max_depth],
+                                                        :end_time  => Time.now + options[:max_time])
 puts " Done"
-moves = chain_moves.last
 
 if moves.nil?
   puts grid
@@ -75,8 +82,8 @@ def print_move(opt={})
   end
 
   options[:text] = []
-  options[:text] << "Score:  #{opt[:score].to_f.round(2)}" if opt[:score]
   options[:text] << "Combos: #{combos}" if combos
+  options[:text] << "Score:  #{opt[:score].to_f.round(2)}" if opt[:score]
 
   puts opt[:grid].to_s(options)
 end
