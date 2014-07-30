@@ -7,7 +7,7 @@ class CandyCrusher::Logic
     :merge_stripe => 1,
     :stripe       => 10, # Random stripe, not great.
     :vstripe      => 30,
-    :hstripe      => 100,
+    :hstripe      => 30,
     :sprinkle     => 500,
   }
 

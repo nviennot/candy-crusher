@@ -66,7 +66,7 @@ class CandyCrusher::Item
     # image_wrapped_red       => new("r", :candy, :wrapped),
     image_wrapped_blue      => new("b", :candy, :wrapped),
     image_wrapped_orange    => new("o", :candy, :wrapped),
-    # image_wrapped_purple    => new("p", :candy, :wrapped),
+    image_wrapped_purple    => new("p", :candy, :wrapped),
     image_wrapped_yellow    => new("y", :candy, :wrapped),
     image_wrapped_green     => new("g", :candy, :wrapped),
 
