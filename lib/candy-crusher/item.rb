@@ -28,6 +28,10 @@ class CandyCrusher::Item
     def sprinkle
       @spinkle ||= new("S", :candy)
     end
+
+    def chocolate
+      @chocolate ||= new("C")
+    end
   end
 
   MAPPING = {
@@ -66,10 +70,9 @@ class CandyCrusher::Item
     image_wrapped_yellow    => new("y", :candy, :wrapped),
     image_wrapped_green     => new("g", :candy, :wrapped),
 
-
     image_sprinkle       => sprinkle,
 
-    image_chocolate => new("C"),
+    image_chocolate => chocolate,
     image_empty_double_jelly => new("J"),
   }
 
@@ -79,6 +82,10 @@ class CandyCrusher::Item
 
   def candy?
     modifiers.include? :candy
+  end
+
+  def avoid?
+    modifiers.include? :avoid
   end
 
   def locked?

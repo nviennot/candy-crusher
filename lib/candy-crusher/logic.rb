@@ -59,7 +59,7 @@ class CandyCrusher::Logic
           next if combos.empty?
 
           total_score = score
-          total_score += parent_move[:score] if parent_move
+          total_score += parent_move[:total_score] if parent_move
 
           moves << {:swap        => [i,j,*swap],
                     :combos      => combos,
@@ -188,27 +188,42 @@ class CandyCrusher::Logic
       end
     end
 
+    score = combos.map { |c| SCORES[c] }.reduce(:+).to_f
+
     unless combos.empty?
-      grid = apply_destroys(grid)
+      grid, new_score = apply_destroys(grid)
+      score += new_score
+
       grid = apply_gravity(grid)
 
-      grid, new_combos, score = apply_game_rules(grid)
+      grid, new_combos, new_score = apply_game_rules(grid)
       combos += new_combos
-      score += score
+      score += new_score
     end
 
-    score = combos.map { |c| SCORES[c] }.reduce(:+).to_f * empty_ratio
-    [grid, combos, score]
+    [grid, combos, score * empty_ratio]
   end
 
   def apply_destroys(grid)
+    score = 0
     grid = grid.dup
     for i in 0...(grid.max_i) do
       for j in (0...grid.max_j) do
-        grid[i,j] = Item.hole if grid[i,j].marked_for_destroy? && grid[i,j] != Item.nothing
+        next unless grid[i,j].marked_for_destroy?
+        next if grid[i,j] == Item.nothing
+
+        if grid[i,j] == Item.chocolate
+          score += 300
+        end
+
+        if grid[i,j].avoid?
+          score -= 10000
+        end
+
+        grid[i,j] = Item.hole
       end
     end
-    grid
+    [grid, score]
   end
 
   def _apply_gravity(grid)
