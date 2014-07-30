@@ -63,12 +63,13 @@ class CandyCrusher::Grid
     grid
   end
 
-  attr_accessor :max_i, :max_j, :connectors, :items
+  attr_accessor :max_i, :max_j, :connectors, :items, :transposed
   def initialize(max_i, max_j, connectors)
     @max_i = max_i
     @max_j = max_j
     @connectors = Hash[connectors.to_a.map { |i,j,oi,oj| [[oi, oj],[i,j]] }]
     @items = max_i.times.map { max_j.times.map { Item.nothing } }
+    @transposed = false
   end
 
   def dup
@@ -77,7 +78,23 @@ class CandyCrusher::Grid
     end
   end
 
+  def transposed_access
+    dup.tap do |grid|
+      grid.items = self.items
+      grid.transposed = true
+    end
+  end
+
+  def max_i
+    @transposed ? @max_i : @max_j
+  end
+
+  def max_j
+    @transposed ? @max_j : @max_i
+  end
+
   def [](i,j)
+    i,j = j,i if @transposed
     if i < 0 || j < 0 || @items[i].nil? || @items[i][j].nil?
       return Item.nothing
     end
@@ -85,6 +102,7 @@ class CandyCrusher::Grid
   end
 
   def []=(i,j, value)
+    i,j = j,i if @transposed
     @items[i][j] = value
   end
 
@@ -159,40 +177,6 @@ class CandyCrusher::Grid
     end
 
     1.0 - num_holes.to_f / num_items.to_f
-  end
-
-  def safe_remove(i,j)
-    self[i,j] = Item.hole unless self[i,j] == Item.nothing
-  end
-
-  def destroy!(i,j)
-    if self[i,j].hstripped?
-      for i_ in 0...max_i do
-        safe_remove(i_,j)
-      end
-    end
-
-    if self[i,j].vstripped?
-      for j_ in 0...max_j do
-        safe_remove(i,j_)
-      end
-    end
-
-    if self[i,j].wrapped?
-      safe_remove(i-1,j-1)
-      safe_remove(i-1,j)
-      safe_remove(i-1,j+1)
-
-      safe_remove(i,j-1)
-      safe_remove(i,j)
-      safe_remove(i,j+1)
-
-      safe_remove(i+1,j-1)
-      safe_remove(i+1,j)
-      safe_remove(i+1,j+1)
-    end
-
-    self[i,j] = Item.hole
   end
 
   def above_with_gravity(i,j)

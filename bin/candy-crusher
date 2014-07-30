@@ -64,7 +64,7 @@ moves = CandyCrusher::Logic.new.compute_best_move(grid, :max_depth => options[:m
                                                         :end_time  => Time.now + options[:max_time])
 puts " Done"
 
-if moves.nil?
+if moves.empty?
   puts grid
   puts "can't find a move :("
   exit 1

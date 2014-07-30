@@ -1,7 +1,7 @@
 require 'set'
 
 class CandyCrusher::Item
-  attr_accessor :name, :modifiers, :taint
+  attr_accessor :name, :modifiers, :taint, :marked_for_destroy
   def initialize(name, *modifiers)
     @name = name
     @modifiers = Set.new(modifiers)
@@ -23,6 +23,10 @@ class CandyCrusher::Item
 
     def nothing
       @nothing ||= new(" ")
+    end
+
+    def sprinkle
+      @spinkle ||= new("S", :candy)
     end
   end
 
@@ -50,9 +54,9 @@ class CandyCrusher::Item
 
     image_hstripe_red       => new("r", :candy, :hstripe),
     image_hstripe_blue      => new("b", :candy, :hstripe),
-    # image_hstripe_orange    => new("o", :candy, :hstripe),
+    image_hstripe_orange    => new("o", :candy, :hstripe),
     image_hstripe_purple    => new("p", :candy, :hstripe),
-    # image_hstripe_yellow    => new("y", :candy, :hstripe),
+    image_hstripe_yellow    => new("y", :candy, :hstripe),
     image_hstripe_green     => new("g", :candy, :hstripe),
 
     # image_wrapped_red       => new("r", :candy, :wrapped),
@@ -63,7 +67,7 @@ class CandyCrusher::Item
     image_wrapped_green     => new("g", :candy, :wrapped),
 
 
-    image_sprinkle       => new("S", :candy),
+    image_sprinkle       => sprinkle,
 
     image_chocolate => new("C"),
     image_empty_double_jelly => new("J"),
@@ -107,6 +111,10 @@ class CandyCrusher::Item
 
   def tainted?
     !!taint
+  end
+
+  def marked_for_destroy?
+    !!@marked_for_destroy
   end
 
   def hole?

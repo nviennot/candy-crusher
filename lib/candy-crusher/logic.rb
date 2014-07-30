@@ -76,124 +76,139 @@ class CandyCrusher::Logic
     moves
   end
 
+  def mark_for_destroy(grid, i, j)
+    item = grid[i,j]
+    return if item.marked_for_destroy?
+    return if item == Item.nothing
+
+    grid[i,j] = item.dup.tap { |_item| _item.marked_for_destroy = true }
+
+    # Striped
+    methods = [:hstripped?, :vstripped?]
+    methods.reverse! if grid.transposed
+
+    if item.send(methods[0])
+      for i_ in 0...grid.max_i do
+        mark_for_destroy(grid, i_, j)
+      end
+    end
+
+    if item.send(methods[1])
+      for j_ in 0...grid.max_j do
+        mark_for_destroy(grid, i, j_)
+      end
+    end
+
+    # Wrapped
+    if item.wrapped?
+      mark_for_destroy(grid, i-1,j-1)
+      mark_for_destroy(grid, i-1,j)
+      mark_for_destroy(grid, i-1,j+1)
+
+      mark_for_destroy(grid, i,j-1)
+      mark_for_destroy(grid, i,j)
+      mark_for_destroy(grid, i,j+1)
+
+      mark_for_destroy(grid, i+1,j-1)
+      mark_for_destroy(grid, i+1,j)
+      mark_for_destroy(grid, i+1,j+1)
+    end
+  end
+
+  def _apply_game_rules(grid, i, j)
+    return unless grid[i,j].candy?
+    return if [grid[i,j], grid[i+1,j], grid[i+2,j]].any?(&:marked_for_destroy?)
+
+    # Sprinkle
+    if grid[i,j] == grid[i+1,j] &&
+       grid[i,j] == grid[i+2,j] &&
+       grid[i,j] == grid[i+3,j] &&
+       grid[i,j] == grid[i+4,j]
+      mark_for_destroy(grid, i,   j)
+      mark_for_destroy(grid, i+1, j)
+      mark_for_destroy(grid, i+2, j)
+      mark_for_destroy(grid, i+3, j)
+      mark_for_destroy(grid, i+4, j)
+
+      grid[i+2,j] = Item.sprinkle
+
+      return :sprinkle
+    end
+
+    # Stripe
+    if grid[i,j] == grid[i+1,j] &&
+       grid[i,j] == grid[i+2,j] &&
+       grid[i,j] == grid[i+3,j]
+      mark_for_destroy(grid, i,   j)
+      mark_for_destroy(grid, i+1, j)
+      mark_for_destroy(grid, i+2, j)
+      mark_for_destroy(grid, i+3, j)
+
+      taint_c = [[i,j], [i+1,j], [i+2,j], [i+3,j]]
+                  .select { |c| grid[*c].tainted? }
+                  .compact.first
+      taint_c = [i,j] unless taint_c
+
+      tainted_item = grid[*taint_c]
+      stripe = case tainted_item.taint
+               when :hswap then :hstripe
+               when :vswap then :vstripe
+               else :stripe
+               end
+      grid[*taint_c] = tainted_item.dup.tap do |item|
+        item.marked_for_destroy = false
+        # Random stripe, picking hstripe
+        item_stripe = stripe == :stripe ? :hstripe : stripe
+        item.modifiers << item_stripe
+      end
+      return stripe
+    end
+
+    # Normal
+    if grid[i,j] == grid[i+1,j] &&
+       grid[i,j] == grid[i+2,j]
+      mark_for_destroy(grid, i,   j)
+      mark_for_destroy(grid, i+1, j)
+      mark_for_destroy(grid, i+2, j)
+      return :normal
+    end
+  end
+
   def apply_game_rules(grid)
     combos = []
     grid = grid.dup
-
     empty_ratio = grid.empty_ratio
 
-    for i in 0...(grid.max_i-2) do
-      for j in 0...(grid.max_j-2) do
-        next unless grid[i,j].candy?
-
-        # HORIZONTAL
-
-        if grid[i,j] == grid[i+1,j] &&
-           grid[i,j] == grid[i+2,j] &&
-           grid[i,j] == grid[i+3,j] &&
-           grid[i,j] == grid[i+4,j]
-          grid.destroy!(i,j)
-          grid.destroy!(i+1,j)
-          grid.destroy!(i+2,j)
-          grid.destroy!(i+3,j)
-          grid.destroy!(i+4,j)
-          combos << :sprinkle
-        end
-
-        if grid[i,j] == grid[i+1,j] &&
-           grid[i,j] == grid[i+2,j] &&
-           grid[i,j] == grid[i+3,j]
-          taint_c = [[i,j], [i+1,j], [i+2,j], [i+3,j]]
-                      .select { |c| grid[*c].tainted? }
-                      .compact.first
-          if taint_c
-            tainted_item = grid[*taint_c]
-            stripe = case tainted_item.taint
-                     when :hswap then :hstripe
-                     when :vswap then :vstripe
-                     end
-            grid[*taint_c] = tainted_item.dup.tap { |item| item.modifiers << stripe }
-          end
-
-          grid.destroy!(i,j)   unless taint_c == [i,j]
-          grid.destroy!(i+1,j) unless taint_c == [i+1,j]
-          grid.destroy!(i+2,j) unless taint_c == [i+2,j]
-          grid.destroy!(i+3,j) unless taint_c == [i+3,j]
-
-          combos << if    taint_c && grid[*taint_c].hstripped? then :hstripe
-                    elsif taint_c && grid[*taint_c].vstripped? then :vstripe
-                    else :stripe
-                    end
-        end
-
-        if grid[i,j] == grid[i+1,j] &&
-           grid[i,j] == grid[i+2,j]
-          grid.destroy!(i,j)
-          grid.destroy!(i+1,j)
-          grid.destroy!(i+2,j)
-          combos << :normal
-        end
-
-        # VERTICAL
-
-        if grid[i,j] == grid[i,j+1] &&
-           grid[i,j] == grid[i,j+2] &&
-           grid[i,j] == grid[i,j+3] &&
-           grid[i,j] == grid[i,j+4]
-
-          grid.destroy!(i,j)
-          grid.destroy!(i,j+1)
-          grid.destroy!(i,j+2)
-          grid.destroy!(i,j+3)
-          grid.destroy!(i,j+4)
-          combos << :sprinkle
-        end
-
-        if grid[i,j] == grid[i,j+1] &&
-           grid[i,j] == grid[i,j+2] &&
-           grid[i,j] == grid[i,j+3]
-
-          taint_c = [[i,j], [i,j+1], [i,j+2], [i,j+3]]
-                      .select { |c| grid[*c].tainted? }
-                      .compact.first
-          if taint_c
-            tainted_item = grid[*taint_c]
-            stripe = case tainted_item.taint
-                     when :hswap then :hstripe
-                     when :vswap then :vstripe
-                     end
-            grid[*taint_c] = tainted_item.dup.tap { |item| item.modifiers << stripe }
-          end
-
-          grid.destroy!(i,j)   unless taint_c == [i,j]
-          grid.destroy!(i,j+1) unless taint_c == [i,j+1]
-          grid.destroy!(i,j+2) unless taint_c == [i,j+2]
-          grid.destroy!(i,j+3) unless taint_c == [i,j+3]
-
-          combos << if    taint_c && grid[*taint_c].hstripped? then :hstripe
-                    elsif taint_c && grid[*taint_c].vstripped? then :vstripe
-                    else :stripe
-                    end
-        end
-
-        if grid[i,j] == grid[i,j+1] &&
-           grid[i,j] == grid[i,j+2]
-          grid.destroy!(i,j)
-          grid.destroy!(i,j+1)
-          grid.destroy!(i,j+2)
-          combos << :normal
+    [grid, grid.transposed_access].each do |_grid|
+      for i in 0..._grid.max_i do
+        for j in 0..._grid.max_j do
+          c = _apply_game_rules(_grid, i,j)
+          combos << c unless c.nil?
         end
       end
     end
 
     unless combos.empty?
-      grid, new_combos, score = apply_game_rules(apply_gravity(grid))
+      grid = apply_destroys(grid)
+      grid = apply_gravity(grid)
+
+      grid, new_combos, score = apply_game_rules(grid)
       combos += new_combos
       score += score
     end
 
     score = combos.map { |c| SCORES[c] }.reduce(:+).to_f * empty_ratio
     [grid, combos, score]
+  end
+
+  def apply_destroys(grid)
+    grid = grid.dup
+    for i in 0...(grid.max_i) do
+      for j in (0...grid.max_j) do
+        grid[i,j] = Item.hole if grid[i,j].marked_for_destroy? && grid[i,j] != Item.nothing
+      end
+    end
+    grid
   end
 
   def _apply_gravity(grid)
