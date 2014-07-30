@@ -28,8 +28,8 @@ class CandyCrusher::Grid
   end
 
   def self.get_grid(image, options={})
-    max_i = options[:layouts].map { |l| l[0] + l[2] }.max
-    max_j = options[:layouts].map { |l| l[1] + l[3] }.max
+    max_i = options[:layouts].map { |l| l[2]+1 }.max
+    max_j = options[:layouts].map { |l| l[3]+1 }.max
 
     grid = new(max_i, max_j, options[:connectors])
 
@@ -38,8 +38,8 @@ class CandyCrusher::Grid
         best_score = 2**32
         best_item = nil
 
-        unless options[:layouts].any? { |l| l[0] <= i && i < l[0] + l[2] &&
-                                            l[1] <= j && j < l[1] + l[3] }
+        unless options[:layouts].any? { |l| l[0] <= i && i <= l[2] &&
+                                            l[1] <= j && j <= l[3] }
           next
         end
 
@@ -108,11 +108,11 @@ class CandyCrusher::Grid
   end
 
   def max_i
-    @transposed ? @max_i : @max_j
+    @transposed ? @max_j : @max_i
   end
 
   def max_j
-    @transposed ? @max_j : @max_i
+    @transposed ? @max_i : @max_j
   end
 
   def [](i,j)

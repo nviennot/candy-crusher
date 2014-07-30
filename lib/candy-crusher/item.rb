@@ -21,6 +21,10 @@ class CandyCrusher::Item
       @hole ||= new(".")
     end
 
+    def jelly
+      @jelly ||= new(".", :jelly)
+    end
+
     def nothing
       @nothing ||= new(" ")
     end
@@ -31,6 +35,10 @@ class CandyCrusher::Item
 
     def chocolate
       @chocolate ||= new("C")
+    end
+
+    def chantilly
+      @chantilly ||= new("O")
     end
   end
 
@@ -70,10 +78,14 @@ class CandyCrusher::Item
     image_wrapped_yellow    => new("y", :candy, :wrapped),
     image_wrapped_green     => new("g", :candy, :wrapped),
 
-    image_sprinkle       => sprinkle,
-
+    image_sprinkle  => sprinkle,
     image_chocolate => chocolate,
-    image_empty_double_jelly => new("J"),
+
+    image_empty_double_jelly => jelly,
+    image_chantilly => chantilly,
+
+    image_nut    => new("N", :fruit),
+    image_cherry => new("Y", :fruit),
   }
 
   def dup
@@ -82,6 +94,14 @@ class CandyCrusher::Item
 
   def candy?
     modifiers.include? :candy
+  end
+
+  def fruit?
+    modifiers.include? :fruit
+  end
+
+  def proximity_breakable?
+    self == self.class.chocolate || self == self.class.chantilly
   end
 
   def avoid?
@@ -97,7 +117,7 @@ class CandyCrusher::Item
   end
 
   def movable?
-    candy? && !locked?
+    (candy? || fruit?) && !locked?
   end
 
   def wrapped?

@@ -20,7 +20,7 @@ class CandyCrusher::Logic
 
     options[:max_depth].times.each do |depth|
       next if depth == 0
-      puts "Iteration #{depth}"
+      puts "Depth #{depth}"
 
       new_moves = []
 
@@ -208,7 +208,8 @@ class CandyCrusher::Logic
       grid, new_score = apply_destroys(grid)
       score += new_score
 
-      grid = apply_gravity(grid)
+      grid, new_score = apply_gravity(grid)
+      score += new_score
 
       grid, new_combos, new_score = apply_game_rules(grid)
       combos += new_combos
@@ -218,64 +219,82 @@ class CandyCrusher::Logic
     [grid, combos, score * empty_ratio]
   end
 
+  def try_proximity_destroys(grid, i, j)
+    [[i-1,j], [i,j-1], [i,j+1], [i+1,j]].each do |_i, _j|
+      mark_for_destroy(grid, _i, _j) if grid[_i, _j].proximity_breakable?
+    end
+  end
+
   def apply_destroys(grid)
     score = 0
     grid = grid.dup
-    for i in 0...(grid.max_i) do
-      for j in (0...grid.max_j) do
-        next unless grid[i,j].marked_for_destroy?
-        next if grid[i,j] == Item.nothing
+    2.times do
+      for i in 0...(grid.max_i) do
+        for j in (0...grid.max_j) do
+          next unless grid[i,j].marked_for_destroy?
+          next if grid[i,j] == Item.nothing
 
-        if grid[i,j] == Item.chocolate
-          score += 300
-        end
+          if grid[i,j] == Item.chantilly
+            score += 100
+          end
 
-        if grid[i,j].avoid?
-          score -= 10000
-        end
+          if grid[i,j] == Item.chocolate
+            score += 300
+          end
 
-        if grid[i,j].locked?
-          score += 20
-        end
+          if grid[i,j].avoid?
+            score -= 10000
+          end
 
-        if grid[i,j].locked?
-          grid[i,j] = grid[i,j].dup.tap { |item| item.modifiers - [:locked] }
-        else
+          if grid[i,j].locked?
+            score += 20
+          end
+
+          score += 1
+
+          if grid[i,j].locked?
+            grid[i,j] = grid[i,j].dup.tap { |item| item.modifiers - [:locked] }
+            next
+          end
+
+          try_proximity_destroys(grid, i,j) if grid[i,j].candy?
           grid[i,j] = Item.hole
         end
-        score += 1
       end
     end
     [grid, score]
   end
 
-  def _apply_gravity(grid)
+  def apply_gravity(grid)
+    score = 0
     grid = grid.dup
 
-    for i in 0...(grid.max_i) do
-      for j in (1...grid.max_j).to_a.reverse do
-        if grid[i,j].hole?
-          tmp_i, tmp_j = i, j
+    2.times do # connectors
+      for i in 0...(grid.max_i) do
+        for j in (1...grid.max_j).to_a.reverse do
+          if grid[i,j].hole?
+            tmp_i, tmp_j = i, j
 
-          loop do
-            tmp_i, tmp_j = grid.above_with_gravity(tmp_i, tmp_j)
-            if grid[tmp_i, tmp_j].movable?
-              grid[i,j] = grid[tmp_i, tmp_j]
-              grid[tmp_i, tmp_j] = Item.hole
-              break
+            loop do
+              tmp_i, tmp_j = grid.above_with_gravity(tmp_i, tmp_j)
+              if grid[tmp_i, tmp_j].movable?
+                if grid[tmp_i, tmp_j].fruit?
+                  score += 10 * (j - tmp_j)
+                end
+
+                grid[i,j] = grid[tmp_i, tmp_j]
+                grid[tmp_i, tmp_j] = Item.hole
+
+                break
+              end
+              break unless grid[tmp_i, tmp_j].hole?
             end
-            break unless grid[tmp_i, tmp_j].hole?
-          end
 
+          end
         end
       end
     end
 
-    grid
-  end
-
-  def apply_gravity(grid)
-    # connectors
-    _apply_gravity(_apply_gravity(grid))
+    [grid, score]
   end
 end
