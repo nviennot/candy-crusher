@@ -3,15 +3,22 @@ class CandyCrusher::Logic
 
   SCORES = {
     :move         => -5,
-    :normal       => 1,
+    :normal       => 0,
     :merge_stripe => 1,
     :stripe       => 10, # Random stripe, not great.
     :vstripe      => 30,
     :hstripe      => 30,
+    :wrapped      => 30,
     :sprinkle     => 500,
+    :merge_sprinkle => 10000,
   }
 
-  def initialize
+  def initialize(options={})
+    @bonus = SCORES.merge(options[:bonus] || {})
+  end
+
+  def bonus_for(what)
+    @bonus[what]
   end
 
   def compute_best_move(grid, options={})
@@ -62,7 +69,7 @@ class CandyCrusher::Logic
 
           total_score = score
           total_score += parent_move[:total_score] if parent_move
-          total_score += SCORES[:move] * depth
+          total_score += bonus_for(:move) * depth
 
           moves << {:swap        => [i,j,*swap],
                     :combos      => combos,
@@ -122,7 +129,7 @@ class CandyCrusher::Logic
     return unless grid[i,j].candy?
     return if [grid[i,j], grid[i+1,j], grid[i+2,j]].any?(&:marked_for_destroy?)
 
-    # Merge stripe
+    # Stripe + Stripe
     if grid[i,j].stripped? && grid[i,j].tainted? &&
        grid[i+1,j].stripped? && grid[i+1,j].tainted?
       # XXX Swaping in the other direction is *not* the same
@@ -133,7 +140,14 @@ class CandyCrusher::Logic
       return :merge_stripe
     end
 
-    # Sprinkle
+    # Sprinkle + Sprinkle
+    if grid[i,j]   == Item.sprinkle &&
+       grid[i+1,j] == Item.sprinkle
+      grid.each { |_i,_j| mark_for_destroy(_i,_j) if grid[_i,_j].candy? }
+      return :merge_sprinkle
+    end
+
+    # 5 in a row
     if grid[i,j] == grid[i+1,j] &&
        grid[i,j] == grid[i+2,j] &&
        grid[i,j] == grid[i+3,j] &&
@@ -149,7 +163,7 @@ class CandyCrusher::Logic
       return :sprinkle
     end
 
-    # Stripe
+    # 4 in a row
     if grid[i,j] == grid[i+1,j] &&
        grid[i,j] == grid[i+2,j] &&
        grid[i,j] == grid[i+3,j]
@@ -175,16 +189,64 @@ class CandyCrusher::Logic
         item_stripe = stripe == :stripe ? :hstripe : stripe
         item.modifiers << item_stripe
       end
+      grid[*taint_c] = tainted_item.dup.tap do |item|
+        item.marked_for_destroy = false
+        # Random stripe, picking hstripe
+        item_stripe = stripe == :stripe ? :hstripe : stripe
+        item.modifiers << item_stripe
+      end
       return stripe
     end
 
-    # Normal
+    # 3 in a row
     if grid[i,j] == grid[i+1,j] &&
        grid[i,j] == grid[i+2,j]
+      create_wrapped = nil
       mark_for_destroy(grid, i,   j)
       mark_for_destroy(grid, i+1, j)
       mark_for_destroy(grid, i+2, j)
-      return :normal
+
+      # L and T shapes
+      if grid[i,j] == grid[i,j+1] &&
+         grid[i,j] == grid[i,j+2]
+        mark_for_destroy(grid, i, j+1)
+        mark_for_destroy(grid, i, j+2)
+        create_wrapped = [i,j]
+
+      elsif grid[i,j] == grid[i+1,j+1] &&
+            grid[i,j] == grid[i+1,j+2]
+        mark_for_destroy(grid, i+1, j+1)
+        mark_for_destroy(grid, i+1, j+2)
+        create_wrapped = [i+1,j]
+
+      elsif grid[i,j] == grid[i+1,j-1] &&
+            grid[i,j] == grid[i+1,j-2]
+        mark_for_destroy(grid, i+1, j-1)
+        mark_for_destroy(grid, i+1, j-2)
+        create_wrapped = [i+1,j]
+
+      elsif grid[i,j] == grid[i+2,j+1] &&
+            grid[i,j] == grid[i+2,j+2]
+        mark_for_destroy(grid, i+2, j+1)
+        mark_for_destroy(grid, i+2, j+2)
+        create_wrapped = [i+2,j]
+
+      elsif grid[i,j] == grid[i+2,j-1] &&
+            grid[i,j] == grid[i+2,j-2]
+        mark_for_destroy(grid, i+2, j-1)
+        mark_for_destroy(grid, i+2, j-2)
+        create_wrapped = [i+2,j]
+      end
+
+      if create_wrapped
+        grid[*create_wrapped] = grid[*create_wrapped].dup.tap do |item|
+          item.marked_for_destroy = false
+          item.modifiers << :wrapped
+        end
+        return :wrapped
+      else
+        return :normal
+      end
     end
   end
 
@@ -194,15 +256,13 @@ class CandyCrusher::Logic
     empty_ratio = grid.empty_ratio
 
     [grid, grid.transposed_access].each do |_grid|
-      for i in 0..._grid.max_i do
-        for j in 0..._grid.max_j do
-          c = _apply_game_rules(_grid, i,j)
-          combos << c unless c.nil?
-        end
+      _grid.each do |i,j|
+        c = _apply_game_rules(_grid, i,j)
+        combos << c unless c.nil?
       end
     end
 
-    score = combos.map { |c| SCORES[c] }.reduce(:+).to_f
+    score = combos.map { |c| bonus_for(c) }.reduce(:+).to_f
 
     unless combos.empty?
       grid, new_score = apply_destroys(grid)
@@ -229,37 +289,35 @@ class CandyCrusher::Logic
     score = 0
     grid = grid.dup
     2.times do
-      for i in 0...(grid.max_i) do
-        for j in (0...grid.max_j) do
-          next unless grid[i,j].marked_for_destroy?
-          next if grid[i,j] == Item.nothing
+      grid.each do |i,j|
+        next unless grid[i,j].marked_for_destroy?
+        next if grid[i,j] == Item.nothing
 
-          if grid[i,j] == Item.chantilly
-            score += 100
-          end
-
-          if grid[i,j] == Item.chocolate
-            score += 300
-          end
-
-          if grid[i,j].avoid?
-            score -= 10000
-          end
-
-          if grid[i,j].locked?
-            score += 20
-          end
-
-          score += 1
-
-          if grid[i,j].locked?
-            grid[i,j] = grid[i,j].dup.tap { |item| item.modifiers - [:locked] }
-            next
-          end
-
-          try_proximity_destroys(grid, i,j) if grid[i,j].candy?
-          grid[i,j] = Item.hole
+        if grid[i,j] == Item.chantilly
+          score += 100
         end
+
+        if grid[i,j] == Item.chocolate
+          score += 300
+        end
+
+        if grid[i,j].avoid?
+          score -= 10000
+        end
+
+        if grid[i,j].locked?
+          score += 20
+        end
+
+        score += 1
+
+        if grid[i,j].locked?
+          grid[i,j] = grid[i,j].dup.tap { |item| item.modifiers - [:locked] }
+          next
+        end
+
+        try_proximity_destroys(grid, i,j) if grid[i,j].candy?
+        grid[i,j] = Item.hole
       end
     end
     [grid, score]

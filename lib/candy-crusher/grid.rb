@@ -202,6 +202,18 @@ class CandyCrusher::Grid
   end
 
   def above_with_gravity(i,j)
-    connectors[[i,j]] || [i,j-1]
+    coords = connectors[[i,j]] || [i,j-1]
+    while coords == Item.nothing && coords[1] >= 0
+      coords = [coords[0], coords[1]-1]
+    end
+    coords
+  end
+
+  def each(&block)
+    for i in 0...max_i do
+      for j in 0...max_j do
+        block.call(i,j)
+      end
+    end
   end
 end

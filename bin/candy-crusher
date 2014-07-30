@@ -46,6 +46,11 @@ OptionParser.new do |opts|
     options[:set] ||= []
     options[:set] << [i.to_i, j.to_i, other_i.to_i, other_j.to_i, what]
   end
+
+  opts.on("-b", "--bonus item,score", Array) do |item,score|
+    options[:bonus] ||= {}
+    options[:bonus][item.to_sym] = score.to_i
+  end
 end.parse!
 
 print "Capture Screen..."
@@ -65,8 +70,8 @@ puts "Computing Moves..."
 
 options[:max_depth] ||= 15
 options[:max_time]  ||= 10
-moves = CandyCrusher::Logic.new.compute_best_move(grid, :max_depth => options[:max_depth],
-                                                        :end_time  => Time.now + options[:max_time])
+moves = CandyCrusher::Logic.new(options).compute_best_move(grid, :max_depth => options[:max_depth],
+                                                                 :end_time  => Time.now + options[:max_time])
 puts " Done"
 
 if moves.empty?

@@ -113,7 +113,7 @@ class CandyCrusher::Item
   end
 
   def special?
-    stripped? || wrapped?
+    stripped? || wrapped? || self == self.class.sprinkle
   end
 
   def movable?
