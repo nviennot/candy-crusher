@@ -2,11 +2,12 @@ class CandyCrusher::Logic
   Item = CandyCrusher::Item
 
   SCORES = {
-    :normal   => 1,
-    :stripe   => 10, # Random stripe, not great.
-    :vstripe  => 30,
-    :hstripe  => 100,
-    :sprinkle => 500,
+    :normal       => 1,
+    :merge_stripe => 1,
+    :stripe       => 10, # Random stripe, not great.
+    :vstripe      => 30,
+    :hstripe      => 100,
+    :sprinkle     => 500,
   }
 
   def initialize
@@ -119,6 +120,17 @@ class CandyCrusher::Logic
     return unless grid[i,j].candy?
     return if [grid[i,j], grid[i+1,j], grid[i+2,j]].any?(&:marked_for_destroy?)
 
+    # Merge stripe
+    if grid[i,j].stripped? && grid[i,j].tainted? &&
+       grid[i+1,j].stripped? && grid[i+1,j].tainted?
+      # XXX Swaping in the other direction is *not* the same
+      grid[i,j] = Item.new("x", :candy, :vstripe)
+      mark_for_destroy(grid,i,j)
+      grid[i,j] = Item.new("x", :candy, :hstripe)
+      mark_for_destroy(grid,i,j)
+      return :merge_stripe
+    end
+
     # Sprinkle
     if grid[i,j] == grid[i+1,j] &&
        grid[i,j] == grid[i+2,j] &&
@@ -221,6 +233,7 @@ class CandyCrusher::Logic
         end
 
         grid[i,j] = Item.hole
+        score += 1
       end
     end
     [grid, score]
