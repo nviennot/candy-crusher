@@ -2,15 +2,19 @@ class CandyCrusher::Logic
   Item = CandyCrusher::Item
 
   SCORES = {
-    :move         => -5,
-    :normal       => 0,
-    :merge_stripe => 1,
-    :stripe       => 10, # Random stripe, not great.
-    :vstripe      => 30,
-    :hstripe      => 30,
-    :wrapped      => 30,
-    :sprinkle     => 500,
-    :merge_sprinkle => 10000,
+    :move             => -5,
+    :normal           => 0,
+    :merge_stripe     => 0,
+    :stripe           => 10, # Random stripe, not great.
+    :vstripe          => 30,
+    :hstripe          => 30,
+    :wrapped          => 30,
+    :sprinkle         => 500,
+    :sprinkle_candy   => 0,
+    :stripe_wrapped   => 0,
+    :merge_sprinkle   => 10000,
+    :sprinkle_stripe  => 100000,
+    :sprinkle_wrapped => 100000,
   }
 
   def initialize(options={})
@@ -129,22 +133,75 @@ class CandyCrusher::Logic
     return unless grid[i,j].candy?
     return if [grid[i,j], grid[i+1,j], grid[i+2,j]].any?(&:marked_for_destroy?)
 
+    # Wrapped + Wrapped
+    # TODO
+
     # Stripe + Stripe
-    if grid[i,j].stripped? && grid[i,j].tainted? &&
-       grid[i+1,j].stripped? && grid[i+1,j].tainted?
+    if grid[i,j].tainted? && grid[i+1,j].tainted? &&
+       grid[i,j].stripped? && grid[i+1,j].stripped?
       # XXX Swaping in the other direction is *not* the same
-      grid[i,j] = Item.new("x", :candy, :vstripe)
-      mark_for_destroy(grid,i,j)
-      grid[i,j] = Item.new("x", :candy, :hstripe)
-      mark_for_destroy(grid,i,j)
+
+      for i_ in 0...grid.max_i do
+        mark_for_destroy(grid, i_, j)
+      end
+      for j_ in 0...grid.max_j do
+        mark_for_destroy(grid, i, j_)
+      end
+
       return :merge_stripe
     end
 
+    # Stripe + Wrapped
+    if grid[i,j].tainted? && grid[i+1,j].tainted? &&
+       ((grid[i,j].stripped? && grid[i+1,j].wrapped?) ||
+        (grid[i,j].wrapped? && grid[i+1,j].stripped?))
+      # XXX Swaping in the other direction is *not* the same
+      for i_ in 0...grid.max_i do
+        mark_for_destroy(grid, i_, j-1)
+        mark_for_destroy(grid, i_, j)
+        mark_for_destroy(grid, i_, j+1)
+      end
+      for j_ in 0...grid.max_j do
+        mark_for_destroy(grid, i-1, j_)
+        mark_for_destroy(grid, i,   j_)
+        mark_for_destroy(grid, i+1, j_)
+      end
+      return :stripe_wrapped
+    end
+
     # Sprinkle + Sprinkle
-    if grid[i,j]   == Item.sprinkle &&
-       grid[i+1,j] == Item.sprinkle
-      grid.each { |_i,_j| mark_for_destroy(_i,_j) if grid[_i,_j].candy? }
+    if grid[i,j].tainted? && grid[i+1,j].tainted? &&
+       grid[i,j] == Item.sprinkle && grid[i+1,j] == Item.sprinkle
+      grid.each { |_i,_j| mark_for_destroy(grid, _i,_j) if grid[_i,_j].candy? }
       return :merge_sprinkle
+    end
+
+    # Sprinkle + Candy/Stripe/Wrapped
+    if grid[i,j].tainted? && grid[i+1,j].tainted? &&
+       grid[i,j] == Item.sprinkle && grid[i+1,j].candy?
+      mark_for_destroy(grid, i, j)
+
+      type = if grid[i+1,j].stripped?
+               :sprinkle_stripe
+             elsif grid[i+1,j].wrapped?
+               :sprinkle_wrapped
+             else
+               :sprinkle_candy
+             end
+
+      grid.each do |_i,_j|
+        next unless grid[_i,_j] == grid[i+1,j]
+        case type
+        when :sprinkle_candy
+          mark_for_destroy(grid, _i,_j)
+        when :sprinkle_stripe
+          grid[_i,_j] = grid[_i,_j].dup.tap { |item| item.modifiers << [:hstripe, :vstripe].sample }
+        when :sprinkle_wrapped
+          grid[_i,_j] = grid[_i,_j].dup.tap { |item| item.modifiers << :wrapped }
+        end
+      end
+
+      return type
     end
 
     # 5 in a row

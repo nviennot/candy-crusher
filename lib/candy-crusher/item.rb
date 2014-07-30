@@ -34,7 +34,7 @@ class CandyCrusher::Item
     end
 
     def chocolate
-      @chocolate ||= new("C")
+      @chocolate ||= new("x")
     end
 
     def chantilly
@@ -85,7 +85,7 @@ class CandyCrusher::Item
     image_chantilly => chantilly,
 
     image_nut    => new("N", :fruit),
-    image_cherry => new("Y", :fruit),
+    image_cherry => new("C", :fruit),
   }
 
   def dup
@@ -113,7 +113,7 @@ class CandyCrusher::Item
   end
 
   def special?
-    stripped? || wrapped? || self == self.class.sprinkle
+    stripped? || wrapped? || fruit? || self == self.class.sprinkle
   end
 
   def movable?
