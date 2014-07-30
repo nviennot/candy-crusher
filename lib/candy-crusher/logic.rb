@@ -2,6 +2,7 @@ class CandyCrusher::Logic
   Item = CandyCrusher::Item
 
   SCORES = {
+    :move         => -5,
     :normal       => 1,
     :merge_stripe => 1,
     :stripe       => 10, # Random stripe, not great.
@@ -14,7 +15,7 @@ class CandyCrusher::Logic
   end
 
   def compute_best_move(grid, options={})
-    moves = compute_moves(grid, nil)
+    moves = compute_moves(grid, nil, 0)
     all_moves = moves.dup
 
     options[:max_depth].times.each do |depth|
@@ -24,7 +25,7 @@ class CandyCrusher::Logic
       new_moves = []
 
       moves.each do |move|
-        move[:next_moves] = compute_moves(move[:new_grid], move)
+        move[:next_moves] = compute_moves(move[:new_grid], move, depth)
         new_moves += move[:next_moves]
 
         break if Time.now > options[:end_time]
@@ -47,7 +48,7 @@ class CandyCrusher::Logic
     chain.reverse
   end
 
-  def compute_moves(grid, parent_move)
+  def compute_moves(grid, parent_move, depth)
     moves = []
 
     for i in 0...(grid.max_i-1) do
@@ -61,6 +62,7 @@ class CandyCrusher::Logic
 
           total_score = score
           total_score += parent_move[:total_score] if parent_move
+          total_score += SCORES[:move] * depth
 
           moves << {:swap        => [i,j,*swap],
                     :combos      => combos,
@@ -232,7 +234,15 @@ class CandyCrusher::Logic
           score -= 10000
         end
 
-        grid[i,j] = Item.hole
+        if grid[i,j].locked?
+          score += 20
+        end
+
+        if grid[i,j].locked?
+          grid[i,j] = grid[i,j].dup.tap { |item| item.modifiers - [:locked] }
+        else
+          grid[i,j] = Item.hole
+        end
         score += 1
       end
     end
