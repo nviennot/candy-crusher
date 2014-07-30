@@ -41,6 +41,11 @@ OptionParser.new do |opts|
   opts.on("-v", "--verbose") do
     options[:verbose] = true
   end
+
+  opts.on("-s", "--set i,j,other_i,other_j,what", Array) do |i,j,other_i,other_j,what|
+    options[:set] ||= []
+    options[:set] << [i.to_i, j.to_i, other_i.to_i, other_j.to_i, what]
+  end
 end.parse!
 
 print "Capture Screen..."
