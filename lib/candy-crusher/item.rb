@@ -100,6 +100,10 @@ class CandyCrusher::Item
     super.tap { |item| item.modifiers = item.modifiers.dup }
   end
 
+  def on_jelly?
+    modifiers.include? :on_jelly
+  end
+
   def candy?
     modifiers.include? :candy
   end
@@ -123,6 +127,7 @@ class CandyCrusher::Item
   end
 
   def special?
+    # for terminal bold colors
     stripped? || wrapped? || fruit? || self == self.class.sprinkle
   end
 

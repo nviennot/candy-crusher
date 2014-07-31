@@ -353,25 +353,12 @@ class CandyCrusher::Logic
         next unless grid[i,j].marked_for_destroy?
         next if grid[i,j] == Item.nothing
 
-        if grid[i,j] == Item.liquorice
-          score += 3
-        end
-
-        if grid[i,j] == Item.chantilly
-          score += 100
-        end
-
-        if grid[i,j] == Item.chocolate
-          score += 300
-        end
-
-        if grid[i,j].avoid?
-          score -= 10000
-        end
-
-        if grid[i,j].locked?
-          score += 20
-        end
+        score += 10000.to_f / grid.count_jelly    if grid[i,j].on_jelly?
+        score += 2000.to_f / grid.count_chocolate if grid[i,j] == Item.chocolate
+        score += 3     if grid[i,j] == Item.liquorice
+        score += 100   if grid[i,j] == Item.chantilly
+        score -= 10000 if grid[i,j].avoid?
+        score += 20    if grid[i,j].locked?
 
         score += 1
 

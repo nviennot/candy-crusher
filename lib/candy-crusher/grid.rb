@@ -53,10 +53,24 @@ class CandyCrusher::Grid
         end
 
         if best_score > 150
-          best_item = nil
+          best_item = Item.nothing
         end
 
         grid[i,j] = best_item
+      end
+    end
+
+    for i in 0...max_i do
+      for j in 0...max_j do
+        next unless grid[i,j].candy?
+
+        [Item.image_double_jelly_mask, Item.image_single_jelly_mask].each do |item_image|
+          score = match_images(image, options[:grid][0] + i * Item.width,
+                                      options[:grid][1] + j * Item.height, item_image)
+          if score < 50
+            grid[i,j] = grid[i,j].dup.tap { |item| item.modifiers << :on_jelly }
+          end
+        end
       end
     end
 
@@ -223,5 +237,19 @@ class CandyCrusher::Grid
         block.call(i,j)
       end
     end
+  end
+
+  def count(&block)
+    count = 0
+    each { |i,j| count += 1 if block.call(self[i,j]) }
+    count
+  end
+
+  def count_jelly
+    @count_jelly ||= count { |item| item.on_jelly? }
+  end
+
+  def count_chocolate
+    @count_chocolate ||= count { |item| item == Item.chocolate }
   end
 end
