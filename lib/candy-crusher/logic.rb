@@ -391,7 +391,8 @@ class CandyCrusher::Logic
     score = 0
     grid = grid.dup
 
-    2.times do # connectors
+    loop do
+      moved = false
       for i in 0...(grid.max_i) do
         for j in (1...grid.max_j).to_a.reverse do
           if grid[i,j].hole?
@@ -406,6 +407,7 @@ class CandyCrusher::Logic
 
                 grid[i,j] = grid[tmp_i, tmp_j]
                 grid[tmp_i, tmp_j] = Item.hole
+                moved = true
 
                 break
               end
@@ -415,6 +417,8 @@ class CandyCrusher::Logic
           end
         end
       end
+
+      break unless moved # for connectors
     end
 
     [grid, score]
