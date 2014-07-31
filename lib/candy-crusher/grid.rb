@@ -209,9 +209,9 @@ class CandyCrusher::Grid
 
   def above_with_gravity(i,j)
     coords = connectors[[i,j]] || [i,j-1]
-    # while self[*coords] == Item.nothing && coords[1] > 0
-      # coords = [coords[0], coords[1]-1]
-    # end
+    while self[*coords] == Item.nothing && coords[1] > 0
+      coords = [coords[0], coords[1]-1]
+    end
     coords
   end
 

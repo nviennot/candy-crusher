@@ -12,9 +12,9 @@ class CandyCrusher::Logic
     :sprinkle         => 500,
     :sprinkle_candy   => 0,
     :stripe_wrapped   => 0,
+    :sprinkle_wrapped => 1000,
     :merge_sprinkle   => 10000,
     :sprinkle_stripe  => 100000,
-    :sprinkle_wrapped => 100000,
   }
 
   def initialize(options={})
@@ -198,7 +198,8 @@ class CandyCrusher::Logic
         when :sprinkle_stripe
           grid[_i,_j] = grid[_i,_j].dup.tap { |item| item.modifiers << [:hstripe, :vstripe].sample }
         when :sprinkle_wrapped
-          grid[_i,_j] = grid[_i,_j].dup.tap { |item| item.modifiers << :wrapped }
+          # TODO Sprinkle explodes
+          mark_for_destroy(grid, _i,_j)
         end
       end
 
@@ -265,6 +266,7 @@ class CandyCrusher::Logic
       mark_for_destroy(grid, i+2, j)
 
       # L and T shapes
+      # TODO looks like it has priority over stripes
       if grid[i,j] == grid[i,j+1] &&
          grid[i,j] == grid[i,j+2]
         mark_for_destroy(grid, i, j+1)
@@ -350,6 +352,10 @@ class CandyCrusher::Logic
       grid.each do |i,j|
         next unless grid[i,j].marked_for_destroy?
         next if grid[i,j] == Item.nothing
+
+        if grid[i,j] == Item.liquorice
+          score += 3
+        end
 
         if grid[i,j] == Item.chantilly
           score += 100

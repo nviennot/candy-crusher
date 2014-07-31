@@ -40,6 +40,10 @@ class CandyCrusher::Item
     def chantilly
       @chantilly ||= new("O")
     end
+
+    def liquorice
+      @liquorice ||= new("L")
+    end
   end
 
   MAPPING = {
@@ -78,8 +82,12 @@ class CandyCrusher::Item
     image_wrapped_yellow    => new("y", :candy, :wrapped),
     image_wrapped_green     => new("g", :candy, :wrapped),
 
-    image_sprinkle  => sprinkle,
+    image_sprinkle1  => sprinkle,
+    image_sprinkle2  => sprinkle,
+    image_sprinkle2  => sprinkle,
+
     image_chocolate => chocolate,
+    image_liquorice => liquorice,
 
     image_empty_double_jelly => jelly,
     image_chantilly => chantilly,
@@ -101,7 +109,9 @@ class CandyCrusher::Item
   end
 
   def proximity_breakable?
-    self == self.class.chocolate || self == self.class.chantilly
+    self == self.class.chocolate ||
+    self == self.class.chantilly ||
+    self == self.class.liquorice
   end
 
   def avoid?
@@ -117,7 +127,7 @@ class CandyCrusher::Item
   end
 
   def movable?
-    (candy? || fruit?) && !locked?
+    (candy? || fruit? || self == self.class.liquorice) && !locked?
   end
 
   def wrapped?
