@@ -39,7 +39,8 @@ OptionParser.new do |opts|
   end
 
   opts.on("-v", "--verbose") do
-    options[:verbose] = true
+    options[:verbose] ||= 0
+    options[:verbose] += 1
   end
 
   opts.on("-s", "--set i,j,other_i,other_j,what", Array) do |i,j,other_i,other_j,what|
@@ -76,6 +77,7 @@ puts " Done"
 print "Analyze Grid..."
 grid = CandyCrusher::Grid.get_grid(screen, options)
 puts " Done"
+puts grid if options[:verbose] && options[:verbose] > 1
 
 puts "Computing Moves..."
 
