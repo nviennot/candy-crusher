@@ -25,9 +25,9 @@ OptionParser.new do |opts|
     options[:layouts] << [i,j,i_max,j_max].map(&:to_i)
   end
 
-  opts.on("-C", "--connector i,j,other_i,other_j", Array) do |i,j,other_i,other_j|
+  opts.on("-C", "--connector i,j,k,l,_i,_j", Array) do |i,j,k,l,_i,_j|
     options[:connectors] ||= []
-    options[:connectors] << [i,j,other_i,other_j].map(&:to_i)
+    options[:connectors] << [i,j,k,l,_i,_j].map(&:to_i)
   end
 
   opts.on("-d", "--max-depth i", Integer) do |i|
@@ -101,6 +101,7 @@ end
 moves.each_with_index do |move, index|
   if options[:verbose] || index == 0
     print_move(move.merge(:grid => move[:old_grid]))
+    puts "-" * 60
   end
 end
 

@@ -34,7 +34,7 @@ class CandyCrusher::Item
     end
 
     def chocolate
-      @chocolate ||= new("x")
+      @chocolate ||= new("X")
     end
 
     def chantilly
@@ -71,7 +71,7 @@ class CandyCrusher::Item
     image_hstripe_yellow    => new("y", :candy, :hstripe),
     image_hstripe_green     => new("g", :candy, :hstripe),
 
-    # image_wrapped_red       => new("r", :candy, :wrapped),
+    image_wrapped_red       => new("r", :candy, :wrapped),
     image_wrapped_blue      => new("b", :candy, :wrapped),
     image_wrapped_orange    => new("o", :candy, :wrapped),
     image_wrapped_purple    => new("p", :candy, :wrapped),

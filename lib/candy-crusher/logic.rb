@@ -94,6 +94,7 @@ class CandyCrusher::Logic
     item = grid[i,j]
     return if item.marked_for_destroy?
     return if item == Item.nothing
+    return if item.fruit?
 
     grid[i,j] = item.dup.tap { |_item| _item.marked_for_destroy = true }
 

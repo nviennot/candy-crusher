@@ -89,9 +89,15 @@ class CandyCrusher::Grid
   def initialize(max_i, max_j, connectors)
     @max_i = max_i
     @max_j = max_j
-    @connectors = Hash[connectors.to_a.map { |i,j,oi,oj| [[oi, oj],[i,j]] }]
     @items = max_i.times.map { max_j.times.map { Item.nothing } }
     @transposed = false
+
+    @connectors = {}
+    connectors.to_a.map do |i,j,k,l, _i,_j|
+      for index in (i..k) do
+        @connectors[[_i + (index-i), _j]] = [index,j]
+      end
+    end
   end
 
   def dup
@@ -203,9 +209,9 @@ class CandyCrusher::Grid
 
   def above_with_gravity(i,j)
     coords = connectors[[i,j]] || [i,j-1]
-    while coords == Item.nothing && coords[1] >= 0
-      coords = [coords[0], coords[1]-1]
-    end
+    # while self[*coords] == Item.nothing && coords[1] > 0
+      # coords = [coords[0], coords[1]-1]
+    # end
     coords
   end
 
