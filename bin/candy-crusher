@@ -51,7 +51,13 @@ OptionParser.new do |opts|
     options[:bonus] ||= {}
     options[:bonus][item.to_sym] = score.to_i
   end
+
+  opts.on("-f", "--disable-fall-through") do
+    options[:fall_through] = false
+  end
 end.parse!
+
+options[:fall_through] = true if options[:fall_through].nil?
 
 print "Capture Screen..."
 if options[:file]

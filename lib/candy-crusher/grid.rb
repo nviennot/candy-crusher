@@ -31,7 +31,7 @@ class CandyCrusher::Grid
     max_i = options[:layouts].map { |l| l[2]+1 }.max
     max_j = options[:layouts].map { |l| l[3]+1 }.max
 
-    grid = new(max_i, max_j, options[:connectors])
+    grid = new(max_i, max_j, options[:connectors], options[:fall_through])
 
     for i in 0...max_i do
       for j in 0...max_j do
@@ -85,12 +85,13 @@ class CandyCrusher::Grid
     grid
   end
 
-  attr_accessor :max_i, :max_j, :connectors, :items, :transposed
-  def initialize(max_i, max_j, connectors)
+  attr_accessor :max_i, :max_j, :connectors, :items, :transposed, :fall_through
+  def initialize(max_i, max_j, connectors, fall_through)
     @max_i = max_i
     @max_j = max_j
     @items = max_i.times.map { max_j.times.map { Item.nothing } }
     @transposed = false
+    @fall_through = fall_through
 
     @connectors = {}
     connectors.to_a.map do |i,j,k,l, _i,_j|
@@ -164,7 +165,6 @@ class CandyCrusher::Grid
       s << "   " + text[j - start_text_j] if start_text_j <= j && j < start_text_j + text.size
       s << "\n"
     end
-    s << "\n"
     s
   end
 
@@ -209,8 +209,10 @@ class CandyCrusher::Grid
 
   def above_with_gravity(i,j)
     coords = connectors[[i,j]] || [i,j-1]
-    while self[*coords] == Item.nothing && coords[1] > 0
-      coords = [coords[0], coords[1]-1]
+    if @fall_through
+      while self[*coords] == Item.nothing && coords[1] > 0
+        coords = [coords[0], coords[1]-1]
+      end
     end
     coords
   end
