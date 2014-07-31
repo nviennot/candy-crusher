@@ -19,6 +19,11 @@ class CandyCrusher::Logic
 
   def initialize(options={})
     @bonus = SCORES.merge(options[:bonus] || {})
+    @optimize_for = options[:optimize_for] || []
+  end
+
+  def optimize_for(type)
+    @optimize_for.include? type
   end
 
   def bonus_for(what)
@@ -353,10 +358,19 @@ class CandyCrusher::Logic
         next unless grid[i,j].marked_for_destroy?
         next if grid[i,j] == Item.nothing
 
-        score += 10000.to_f / grid.count_jelly    if grid[i,j].on_jelly?
-        score += 2000.to_f / grid.count_chocolate if grid[i,j] == Item.chocolate
+        if optimize_for(:jelly)
+          score += 10000.to_f / grid.count_jelly if grid[i,j].on_jelly?
+        end
+
+        if optimize_for(:chocolate)
+          score += 2000.to_f / grid.count_chocolate if grid[i,j] == Item.chocolate
+        end
+
+        if optimize_for(:chantilly)
+          score += 100 if grid[i,j] == Item.chantilly
+        end
+
         score += 3     if grid[i,j] == Item.liquorice
-        score += 100   if grid[i,j] == Item.chantilly
         score -= 10000 if grid[i,j].avoid?
         score += 20    if grid[i,j].locked?
 

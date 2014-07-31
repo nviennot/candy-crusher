@@ -55,6 +55,11 @@ OptionParser.new do |opts|
   opts.on("-f", "--disable-fall-through") do
     options[:fall_through] = false
   end
+
+  opts.on("-o", "--optimize-for type") do |type|
+    options[:optimize_for] ||= []
+    options[:optimize_for] << type.to_sym
+  end
 end.parse!
 
 options[:fall_through] = true if options[:fall_through].nil?
