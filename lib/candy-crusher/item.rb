@@ -90,7 +90,10 @@ class CandyCrusher::Item
     image_liquorice => liquorice,
 
     image_empty_double_jelly => jelly,
+
     image_chantilly => chantilly,
+    image_full_cup  => chantilly,
+    image_cup       => chantilly,
 
     image_nut    => new("N", :fruit),
     image_cherry => new("C", :fruit),
