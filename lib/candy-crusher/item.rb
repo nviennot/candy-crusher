@@ -155,6 +155,10 @@ class CandyCrusher::Item
     !!taint
   end
 
+  def target?
+    modifiers.include? :target
+  end
+
   def marked_for_destroy?
     !!@marked_for_destroy
   end

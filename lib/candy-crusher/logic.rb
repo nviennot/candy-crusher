@@ -370,9 +370,10 @@ class CandyCrusher::Logic
           score += 100 if grid[i,j] == Item.chantilly
         end
 
-        score += 3     if grid[i,j] == Item.liquorice
-        score -= 10000 if grid[i,j].avoid?
-        score += 20    if grid[i,j].locked?
+        score += 3       if grid[i,j] == Item.liquorice
+        score -= 10000   if grid[i,j].avoid?
+        score += 1000000 if grid[i,j].target?
+        score += 20      if grid[i,j].locked?
 
         score += 1
 

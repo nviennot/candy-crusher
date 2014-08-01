@@ -75,23 +75,21 @@ class CandyCrusher::Grid
     end
 
     (options[:set] || []).each do |_i, _j, other_i, other_j, what|
-      unless what == 'avoid'
-        item = if Item.respond_to?(what)
-                 Item.send(what)
-               elsif Item.respond_to?("image_#{what}")
-                 Item::MAPPING[Item.send("image_#{what}")]
-               else
-                 raise "Undefined item: #{what}"
-               end
-      end
+      what = what.split(':').map(&:to_sym)
+      item_name = what[0]
+      modifiers = what[1,-1] || []
+
+      item = if Item.respond_to?(item_name)
+               Item.send(item_name)
+             elsif Item.respond_to?("image_#{item_name}")
+               Item::MAPPING[Item.send("image_#{item_name}")]
+             else
+               raise "Undefined item: #{item_name}"
+             end
 
       for i in _i...(other_i+1) do
         for j in _j...(other_j+1) do
-          if what == 'avoid'
-            grid[i,j] = grid[i,j].dup.tap { |_item| _item.modifiers << :avoid }
-          else
-            grid[i,j] = item
-          end
+          grid[i,j] = item.dup.tap { |_item| _item.modifiers = modifiers }
         end
       end
     end
